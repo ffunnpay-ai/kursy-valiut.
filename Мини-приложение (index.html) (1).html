@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Курсы валют</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #f4f6f9);
+    --text: var(--tg-theme-text-color, #1a1d24);
+    --hint: var(--tg-theme-hint-color, #7a8194);
+    --section: var(--tg-theme-section-bg-color, #ffffff);
+    --button: var(--tg-theme-button-color, #4c8df6);
+    --button-text: var(--tg-theme-button-text-color, #ffffff);
+    --accent: #4c8df6;
+    --positive: #2fa84f;
+    --negative: #e0524a;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overscroll-behavior: none;
+  }
+
+  body { padding: 0 0 24px; }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #4c8df6 0%, #6a5af9 100%);
+    color: #fff;
+    padding: 20px 18px 26px;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: "";
+    position: absolute;
+    width: 180px; height: 180px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    top: -60px; right: -40px;
+  }
+  .header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  .header .sub { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+  .header .base-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.18);
+    padding: 5px 11px; border-radius: 20px;
+    font-size: 12px; font-weight: 600; margin-top: 12px;
+  }
+
+  /* Layout */
+  .wrap { padding: 0 14px; margin-top: -14px; }
+
+  /* Converter */
+  .card {
+    background: var(--section);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  }
+  .converter { margin-bottom: 16px; }
+  .conv-row { display: flex; gap: 10px; align-items: center; }
+  .conv-amount {
+    flex: 1;
+    background: var(--bg);
+    border: none;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 18px; font-weight: 600;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+  }
+  .conv-select {
+    background: var(--bg);
+    border: none; border-radius: 12px;
+    padding: 12px 8px;
+    font-size: 15px; font-weight: 600;
+    color: var(--text);
+    outline: none;
+    max-width: 120px;
+  }
+  .swap-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .conv-result {
+    margin-top: 14px;
+    padding: 14px;
+    background: linear-gradient(135deg, #4c8df6 0%, #6a5af9 100%);
+    border-radius: 12px;
+    color: #fff;
+  }
+  .conv-result .val { font-size: 24px; font-weight: 700; }
+  .conv-result .lbl { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+
+  /* Rates list */
+  .list-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin: 4px 2px 10px;
+  }
+  .list-head h2 { font-size: 15px; font-weight: 700; }
+  .list-head .date { font-size: 12px; color: var(--hint); }
+
+  .rate-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .rate-item:last-child { border-bottom: none; }
+  .flag {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .rate-info { flex: 1; min-width: 0; }
+  .rate-code { font-size: 15px; font-weight: 700; }
+  .rate-name { font-size: 12px; color: var(--hint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rate-val { text-align: right; }
+  .rate-val .num { font-size: 15px; font-weight: 700; }
+  .rate-val .inv { font-size: 11px; color: var(--hint); }
+
+  .loading { text-align: center; padding: 30px; color: var(--hint); }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 3px solid rgba(76,141,246,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 10px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err { color: var(--negative); text-align: center; padding: 20px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>💱 Курсы валют</h1>
+    <div class="sub" id="updated">загрузка…</div>
+    <div class="base-pill">🇵🇱 База: PLN</div>
+  </div>
+
+  <div class="wrap">
+    <!-- Конвертер -->
+    <div class="card converter">
+      <div class="conv-row">
+        <input class="conv-amount" id="amount" type="number" inputmode="decimal" value="100">
+        <select class="conv-select" id="from"></select>
+        <button class="swap-btn" id="swap">⇄</button>
+        <select class="conv-select" id="to"></select>
+      </div>
+      <div class="conv-result">
+        <div class="val" id="resultVal">—</div>
+        <div class="lbl" id="resultLbl">введите сумму</div>
+      </div>
+    </div>
+
+    <!-- Список курсов -->
+    <div class="list-head">
+      <h2>Курсы к PLN</h2>
+      <div class="date" id="date"></div>
+    </div>
+    <div class="card">
+      <div id="rates"><div class="loading"><div class="spinner"></div>Загрузка курсов…</div></div>
+    </div>
+  </div>
+
+<script>
+const API = "https://open.er-api.com/v6";
+const BASE = "PLN";
+
+const CURRENCIES = [
+  { code: "USD", name: "Доллар США", flag: "🇺🇸" },
+  { code: "EUR", name: "Евро", flag: "🇪🇺" },
+  { code: "UAH", name: "Гривна", flag: "🇺🇦" },
+  { code: "GBP", name: "Фунт стерлингов", flag: "🇬🇧" },
+  { code: "CHF", name: "Швейцарский франк", flag: "🇨🇭" },
+  { code: "CZK", name: "Чешская крона", flag: "🇨🇿" },
+  { code: "NOK", name: "Норвежская крона", flag: "🇳🇴" },
+  { code: "SEK", name: "Шведская крона", flag: "🇸🇪" },
+  { code: "DKK", name: "Датская крона", flag: "🇩🇰" },
+  { code: "RUB", name: "Рубль", flag: "🇷🇺" },
+  { code: "CNY", name: "Юань", flag: "🇨🇳" },
+  { code: "JPY", name: "Иена", flag: "🇯🇵" },
+  { code: "CAD", name: "Канадский доллар", flag: "🇨🇦" },
+  { code: "AUD", name: "Австрал. доллар", flag: "🇦🇺" },
+  { code: "TRY", name: "Турецкая лира", flag: "🇹🇷" },
+  { code: "PLN", name: "Злотый", flag: "🇵🇱" },
+];
+
+// Курс хранится как: 1 BASE (PLN) = X code.
+// API отдаёт именно такой формат (rates[code] = сколько code в 1 PLN).
+let ratesFromBase = {}; // {CUR: 1 PLN = X CUR}
+
+async function loadRates() {
+  const data = await (await fetch(`${API}/latest/${BASE}`)).json();
+  if (data.result !== "success") throw new Error("API error");
+  ratesFromBase = data.rates;
+  const updated = new Date(data.time_last_update_unix * 1000);
+  document.getElementById("date").textContent = "обновлено " + updated.toLocaleDateString("ru-RU");
+  document.getElementById("updated").textContent = "обновлено " + new Date().toLocaleTimeString("ru-RU", {hour:"2-digit",minute:"2-digit"});
+  renderRates();
+  updateResult();
+}
+
+function renderRates() {
+  const el = document.getElementById("rates");
+  el.innerHTML = "";
+  const list = CURRENCIES.filter(c => c.code !== BASE);
+  for (const cur of list) {
+    const perPln = ratesFromBase[cur.code]; // 1 PLN = perPln code
+    if (!perPln) continue;
+    const rate = 1 / perPln; // 1 cur = rate PLN
+    const inv = perPln;
+    el.insertAdjacentHTML("beforeend", `
+      <div class="rate-item">
+        <div class="flag">${cur.flag}</div>
+        <div class="rate-info">
+          <div class="rate-code">${cur.code}</div>
+          <div class="rate-name">${cur.name}</div>
+        </div>
+        <div class="rate-val">
+          <div class="num">${rate.toFixed(4)} PLN</div>
+          <div class="inv">1 PLN = ${inv.toFixed(4)} ${cur.code}</div>
+        </div>
+      </div>
+    `);
+  }
+}
+
+function fillSelects() {
+  for (const sel of ["from", "to"]) {
+    const el = document.getElementById(sel);
+    el.innerHTML = "";
+    for (const c of CURRENCIES) {
+      const opt = document.createElement("option");
+      opt.value = c.code;
+      opt.textContent = `${c.flag} ${c.code}`;
+      el.appendChild(opt);
+    }
+  }
+  document.getElementById("from").value = "USD";
+  document.getElementById("to").value = "PLN";
+}
+
+function updateResult() {
+  const amt = parseFloat(document.getElementById("amount").value) || 0;
+  const from = document.getElementById("from").value;
+  const to = document.getElementById("to").value;
+  if (from === to) {
+    document.getElementById("resultVal").textContent = amt.toFixed(2) + " " + to;
+    document.getElementById("resultLbl").textContent = `${amt} ${from} = ${amt} ${to}`;
+    return;
+  }
+  // Через PLN: 1 from = (1 / ratesFromBase[from]) PLN, затем в to.
+  const fromPerPln = ratesFromBase[from] || 0; // 1 PLN = fromPerPln from
+  const toPerPln = ratesFromBase[to] || 0;   // 1 PLN = toPerPln to
+  if (!fromPerPln || !toPerPln) {
+    document.getElementById("resultVal").textContent = "—";
+    document.getElementById("resultLbl").textContent = "курс недоступен";
+    return;
+  }
+  // amt from → PLN → to
+  const inPln = amt / fromPerPln;
+  const out = inPln * toPerPln;
+  document.getElementById("resultVal").textContent = out.toFixed(2) + " " + to;
+  document.getElementById("resultLbl").textContent = `${amt} ${from} = ${out.toFixed(4)} ${to}`;
+}
+
+// События
+document.getElementById("amount").addEventListener("input", updateResult);
+document.getElementById("from").addEventListener("change", updateResult);
+document.getElementById("to").addEventListener("change", updateResult);
+document.getElementById("swap").addEventListener("click", () => {
+  const f = document.getElementById("from");
+  const t = document.getElementById("to");
+  [f.value, t.value] = [t.value, f.value];
+  updateResult();
+});
+
+// Инициализация
+try {
+  if (window.Telegram) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+} catch(e) {}
+
+fillSelects();
+loadRates().catch(e => {
+  document.getElementById("rates").innerHTML = `<div class="err">Не удалось загрузить курсы. Проверьте соединение.</div>`;
+});
+</script>
+</body>
+</html>
